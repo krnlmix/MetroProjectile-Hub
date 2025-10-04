@@ -10,7 +10,7 @@ local Window = Rayfield:CreateWindow({
       FileName = "Config"
    },
    KeySystem = false,
-   Theme = "Default"
+   Theme = "Ocean"
 })
 
 -- ChangeLog уведомление при запуске
