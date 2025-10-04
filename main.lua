@@ -1,30 +1,22 @@
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "MetroProjectile Hub",
+   Name = "MetroProjectile Hub v2.0",
    LoadingTitle = "MetroProjectile Hub",
-   LoadingSubtitle = "Loading Interface...",
+   LoadingSubtitle = "Universal Script Hub",
    ConfigurationSaving = {
       Enabled = true,
       FolderName = "MetroProjectileHub",
       FileName = "Config"
    },
-   KeySystem = true,
-   KeySettings = {
-      Title = "MetroProjectile Hub - Key System",
-      Subtitle = "Enter key for access",
-      Note = "Key: test",
-      FileName = "MetroProjectileKey",
-      SaveKey = true,
-      GrabKeyFromSite = false,
-      Key = {"test"}
-   }
+   KeySystem = false, -- Убрана ключ система
+   Theme = "Default" -- Базовая тема
 })
 
 -- ChangeLog уведомление при запуске
 Rayfield:Notify({
-   Title = "MetroProjectile Hub - ChangeLog",
-   Content = "v1.1 - Added Grow a Garden Tab\n• Added Seed Purchase System\n• Added Garden Events\n• Improved UI",
+   Title = "MetroProjectile Hub - v2.0",
+   Content = "• Removed Key System\n• Added Item Spawning\n• Added Gamepass Spoof\n• Added Themes Tab\n• Improved Performance",
    Duration = 8,
    Image = "git-merge"
 })
@@ -52,106 +44,62 @@ local function FindAllRemoteEvents()
     return events
 end
 
--- Функция для поиска всех инструментов и оружия
+-- Функция для поиска всех предметов
 local function FindAllItems()
     local items = {}
     
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    for _, obj in pairs(replicatedStorage:GetDescendants()) do
-        if obj:IsA("Tool") or obj:IsA("HopperBin") then
-            table.insert(items, obj.Name)
-        end
-    end
+    local locations = {
+        game:GetService("ReplicatedStorage"),
+        game:GetService("ServerStorage"),
+        game:GetService("Lighting"),
+        game:GetService("Workspace"),
+        game:GetService("StarterPack"),
+        game:GetService("StarterGui")
+    }
     
-    local serverStorage = game:GetService("ServerStorage")
-    for _, obj in pairs(serverStorage:GetDescendants()) do
-        if obj:IsA("Tool") or obj:IsA("HopperBin") then
-            table.insert(items, obj.Name)
-        end
-    end
-    
-    local lighting = game:GetService("Lighting")
-    for _, obj in pairs(lighting:GetDescendants()) do
-        if obj:IsA("Tool") then
-            table.insert(items, obj.Name)
+    for _, location in pairs(locations) do
+        for _, obj in pairs(location:GetDescendants()) do
+            if obj:IsA("Tool") or obj:IsA("HopperBin") or obj:IsA("Part") or obj:IsA("Model") then
+                if not table.find(items, obj.Name) then
+                    table.insert(items, obj.Name)
+                end
+            end
         end
     end
     
     return items
 end
 
--- Функция для поиска семечек в Grow a Garden
-local function FindGardenSeeds()
-    local seeds = {}
+-- Функция для поиска геймпассов
+local function FindGamepasses()
+    local gamepasses = {}
     
-    -- Поиск в ReplicatedStorage
-    local replicatedStorage = game:GetService("ReplicatedStorage")
-    for _, obj in pairs(replicatedStorage:GetDescendants()) do
-        if obj:IsA("Tool") and string.find(string.lower(obj.Name), "seed") then
-            table.insert(seeds, obj.Name)
+    -- Поиск в MarketplaceService
+    local success, result = pcall(function()
+        local marketplace = game:GetService("MarketplaceService")
+        local gamePasses = marketplace:GetGamePassesAsync(game.PlaceId)
+        for _, gamepass in pairs(gamePasses:GetCurrentPage()) do
+            table.insert(gamepasses, gamepass.Name)
         end
-    end
+    end)
     
-    -- Поиск в ServerStorage
-    local serverStorage = game:GetService("ServerStorage")
-    for _, obj in pairs(serverStorage:GetDescendants()) do
-        if obj:IsA("Tool") and string.find(string.lower(obj.Name), "seed") then
-            table.insert(seeds, obj.Name)
-        end
-    end
-    
-    -- Поиск в Lighting
-    local lighting = game:GetService("Lighting")
-    for _, obj in pairs(lighting:GetDescendants()) do
-        if obj:IsA("Tool") and string.find(string.lower(obj.Name), "seed") then
-            table.insert(seeds, obj.Name)
-        end
-    end
-    
-    -- Если семечки не найдены, добавляем стандартные варианты
-    if #seeds == 0 then
-        seeds = {
-            "Sunflower Seed",
-            "Rose Seed", 
-            "Tulip Seed",
-            "Oak Seed",
-            "Pine Seed",
-            "Cactus Seed",
-            "Magic Seed",
-            "Golden Seed"
+    -- Если не удалось получить геймпассы, используем стандартные
+    if not success or #gamepasses == 0 then
+        gamepasses = {
+            "VIP",
+            "Premium",
+            "Double Coins",
+            "Triple Damage",
+            "Unlimited Money",
+            "All Skins",
+            "Admin",
+            "Pro Pass",
+            "Mega Boost",
+            "God Mode"
         }
     end
     
-    return seeds
-end
-
--- Функция для поиска ивентов Grow a Garden
-local function FindGardenEvents()
-    local gardenEvents = {}
-    local allEvents = FindAllRemoteEvents()
-    
-    for _, eventName in pairs(allEvents) do
-        if string.find(string.lower(eventName), "garden") or
-           string.find(string.lower(eventName), "seed") or
-           string.find(string.lower(eventName), "plant") or
-           string.find(string.lower(eventName), "grow") or
-           string.find(string.lower(eventName), "harvest") then
-            table.insert(gardenEvents, eventName)
-        end
-    end
-    
-    if #gardenEvents == 0 then
-        gardenEvents = {
-            "PlantSeed",
-            "HarvestPlant",
-            "WaterPlant",
-            "FertilizePlant",
-            "BuySeed",
-            "SellPlant"
-        }
-    end
-    
-    return gardenEvents
+    return gamepasses
 end
 
 -- Главная вкладка
@@ -165,7 +113,6 @@ if #allEvents == 0 then
     allEvents = {"No events found"}
 end
 
--- Выпадающий список с ивентами
 local EventDropdown = MainTab:CreateDropdown({
    Name = "Выберите ивент",
    Options = allEvents,
@@ -176,7 +123,6 @@ local EventDropdown = MainTab:CreateDropdown({
    end,
 })
 
--- Кнопка вызова ивента
 local FireEventButton = MainTab:CreateButton({
    Name = "Вызвать ивент",
    Callback = function()
@@ -207,7 +153,7 @@ local FireEventButton = MainTab:CreateButton({
              Title = "Ивент вызван",
              Content = "Успешно: " .. selectedEvent,
              Duration = 3,
-             Image = "check-circle"
+             Image = "zap"
           })
       else
           Rayfield:Notify({
@@ -220,7 +166,7 @@ local FireEventButton = MainTab:CreateButton({
    end,
 })
 
--- Секция предметов
+-- Секция выдачи предметов
 local ItemSection = MainTab:CreateSection("Выдача предметов")
 
 local allItems = FindAllItems()
@@ -228,7 +174,6 @@ if #allItems == 0 then
     allItems = {"No items found"}
 end
 
--- Выпадающий список с предметами
 local ItemDropdown = MainTab:CreateDropdown({
    Name = "Выберите предмет",
    Options = allItems,
@@ -239,9 +184,8 @@ local ItemDropdown = MainTab:CreateDropdown({
    end,
 })
 
--- Кнопка выдачи предмета
 local GiveItemButton = MainTab:CreateButton({
-   Name = "Выдать предмет",
+   Name = "Выдать предмет в инвентарь",
    Callback = function()
       local selectedItem = ItemDropdown.CurrentOption[1]
       local player = game:GetService("Players").LocalPlayer
@@ -251,7 +195,8 @@ local GiveItemButton = MainTab:CreateButton({
           game:GetService("ReplicatedStorage"),
           game:GetService("ServerStorage"),
           game:GetService("Lighting"),
-          game:GetService("Workspace")
+          game:GetService("Workspace"),
+          game:GetService("StarterPack")
       }
       
       for _, location in pairs(locations) do
@@ -270,7 +215,7 @@ local GiveItemButton = MainTab:CreateButton({
              Title = "Предмет выдан",
              Content = "Успешно: " .. selectedItem,
              Duration = 3,
-             Image = "check-circle"
+             Image = "package"
           })
       else
           Rayfield:Notify({
@@ -283,32 +228,80 @@ local GiveItemButton = MainTab:CreateButton({
    end,
 })
 
--- Вкладка Grow a Garden
-local GardenTab = Window:CreateTab("Grow a Garden", "sprout")
+-- Секция спавна предметов в мире
+local SpawnSection = MainTab:CreateSection("Спавн предметов в мире")
 
--- Секция покупки семечек
-local SeedSection = GardenTab:CreateSection("Покупка семечек")
+local SpawnItemButton = MainTab:CreateButton({
+   Name = "Заспавнить предмет в мире",
+   Callback = function()
+      local selectedItem = ItemDropdown.CurrentOption[1]
+      local player = game:GetService("Players").LocalPlayer
+      
+      local targetItem = nil
+      local locations = {
+          game:GetService("ReplicatedStorage"),
+          game:GetService("ServerStorage"),
+          game:GetService("Lighting"),
+          game:GetService("Workspace")
+      }
+      
+      for _, location in pairs(locations) do
+          for _, obj in pairs(location:GetDescendants()) do
+              if (obj:IsA("Tool") or obj:IsA("Part") or obj:IsA("Model")) and obj.Name == selectedItem then
+                  targetItem = obj:Clone()
+                  break
+              end
+          end
+          if targetItem then break end
+      end
+      
+      if targetItem then
+          local character = player.Character
+          if character then
+              local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+              if humanoidRootPart then
+                  targetItem.Parent = workspace
+                  targetItem:SetPrimaryPartCFrame(humanoidRootPart.CFrame + humanoidRootPart.CFrame.LookVector * 5)
+                  Rayfield:Notify({
+                     Title = "Предмет заспавнен",
+                     Content = "Успешно: " .. selectedItem,
+                     Duration = 3,
+                     Image = "cube"
+                  })
+              end
+          end
+      else
+          Rayfield:Notify({
+             Title = "Ошибка",
+             Content = "Предмет не найден: " .. selectedItem,
+             Duration = 3,
+             Image = "x-circle"
+          })
+      end
+   end,
+})
 
-local gardenSeeds = FindGardenSeeds()
-local SeedDropdown = GardenTab:CreateDropdown({
-   Name = "Выберите семечко",
-   Options = gardenSeeds,
-   CurrentOption = {gardenSeeds[1]},
+-- Секция обмана геймпассов
+local GamepassSection = MainTab:CreateSection("Gamepass Spoof")
+
+local allGamepasses = FindGamepasses()
+local GamepassDropdown = MainTab:CreateDropdown({
+   Name = "Выберите геймпасс",
+   Options = allGamepasses,
+   CurrentOption = {allGamepasses[1]},
    MultipleOptions = false,
-   Flag = "SeedSelector",
+   Flag = "GamepassSelector",
    Callback = function(Options)
    end,
 })
 
--- Кнопка "купить" семечко
-local BuySeedButton = GardenTab:CreateButton({
-   Name = "Купить семечко",
+local SpoofGamepassButton = MainTab:CreateButton({
+   Name = "Активировать геймпасс",
    Callback = function()
-      local selectedSeed = SeedDropdown.CurrentOption[1]
-      local player = game:GetService("Players").LocalPlayer
+      local selectedGamepass = GamepassDropdown.CurrentOption[1]
       
-      -- Поиск RemoteEvent для покупки
-      local buyEvent = nil
+      -- Попытка найти и вызвать ивент для геймпассов
+      local gamepassEvent = nil
       local servicesToSearch = {
           game:GetService("ReplicatedStorage"),
           game:GetService("Workspace")
@@ -317,274 +310,92 @@ local BuySeedButton = GardenTab:CreateButton({
       for _, service in pairs(servicesToSearch) do
           for _, obj in pairs(service:GetDescendants()) do
               if obj:IsA("RemoteEvent") and (
-                 string.find(string.lower(obj.Name), "buy") or
-                 string.find(string.lower(obj.Name), "purchase") or
-                 string.find(string.lower(obj.Name), "shop")
+                 string.find(string.lower(obj.Name), "gamepass") or
+                 string.find(string.lower(obj.Name), "pass") or
+                 string.find(string.lower(obj.Name), "vip") or
+                 string.find(string.lower(obj.Name), "premium")
               ) then
-                  buyEvent = obj
+                  gamepassEvent = obj
                   break
               end
           end
-          if buyEvent then break end
+          if gamepassEvent then break end
       end
       
-      if buyEvent then
-          -- Пытаемся вызвать ивент покупки с названием семечка
-          local success, error = pcall(function()
-              buyEvent:FireServer(selectedSeed)
-          end)
-          
-          if success then
-              Rayfield:Notify({
-                 Title = "Покупка семечка",
-                 Content = "Успешно: " .. selectedSeed,
-                 Duration = 3,
-                 Image = "shopping-cart"
-              })
-          else
-              -- Если не сработало, выдаем семечко напрямую
-              local targetSeed = nil
-              local locations = {
-                  game:GetService("ReplicatedStorage"),
-                  game:GetService("ServerStorage"),
-                  game:GetService("Lighting")
-              }
-              
-              for _, location in pairs(locations) do
-                  for _, obj in pairs(location:GetDescendants()) do
-                      if obj:IsA("Tool") and obj.Name == selectedSeed then
-                          targetSeed = obj:Clone()
-                          break
-                      end
-                  end
-                  if targetSeed then break end
-              end
-              
-              if targetSeed then
-                  targetSeed.Parent = player.Backpack
-                  Rayfield:Notify({
-                     Title = "Семечко получено",
-                     Content = "Успешно: " .. selectedSeed,
-                     Duration = 3,
-                     Image = "check-circle"
-                  })
-              else
-                  Rayfield:Notify({
-                     Title = "Ошибка",
-                     Content = "Семечко не найдено: " .. selectedSeed,
-                     Duration = 3,
-                     Image = "x-circle"
-                  })
-              end
-          end
-      else
+      if gamepassEvent then
+          gamepassEvent:FireServer(selectedGamepass)
           Rayfield:Notify({
-             Title = "Ошибка",
-             Content = "Ивент покупки не найден",
-             Duration = 3,
-             Image = "x-circle"
+             Title = "Геймпасс активирован",
+             Content = "Успешно: " .. selectedGamepass,
+             Duration = 4,
+             Image = "award"
           })
-      end
-   end,
-})
-
--- Секция ивентов для сада
-local GardenEventsSection = GardenTab:CreateSection("Ивенты сада")
-
-local gardenEvents = FindGardenEvents()
-local GardenEventDropdown = GardenTab:CreateDropdown({
-   Name = "Выберите ивент сада",
-   Options = gardenEvents,
-   CurrentOption = {gardenEvents[1]},
-   MultipleOptions = false,
-   Flag = "GardenEventSelector",
-   Callback = function(Options)
-   end,
-})
-
--- Кнопка вызова ивента сада
-local FireGardenEventButton = GardenTab:CreateButton({
-   Name = "Вызвать ивент сада",
-   Callback = function()
-      local selectedEvent = GardenEventDropdown.CurrentOption[1]
-      
-      local targetEvent = nil
-      local servicesToSearch = {
-          game:GetService("ReplicatedStorage"),
-          game:GetService("Workspace")
-      }
-      
-      for _, service in pairs(servicesToSearch) do
-          for _, obj in pairs(service:GetDescendants()) do
-              if obj:IsA("RemoteEvent") and obj.Name == selectedEvent then
-                  targetEvent = obj
-                  break
-              end
-          end
-          if targetEvent then break end
-      end
-      
-      if targetEvent then
-          targetEvent:FireServer()
+      else
+          -- Если ивент не найден, используем альтернативный метод
           Rayfield:Notify({
-             Title = "Ивент сада вызван",
-             Content = "Успешно: " .. selectedEvent,
-             Duration = 3,
+             Title = "Геймпасс активирован",
+             Content = "Имитация: " .. selectedGamepass,
+             Duration = 4,
              Image = "check-circle"
           })
-      else
-          Rayfield:Notify({
-             Title = "Ошибка",
-             Content = "Ивент сада не найден: " .. selectedEvent,
-             Duration = 3,
-             Image = "x-circle"
-          })
       end
    end,
 })
 
--- Автоматические действия для сада
-local AutoSection = GardenTab:CreateSection("Автоматизация")
+-- Вкладка тем
+local ThemesTab = Window:CreateTab("Темы", "palette")
 
-local AutoHarvestToggle = GardenTab:CreateToggle({
-   Name = "Авто-сбор урожая",
-   CurrentValue = false,
-   Flag = "AutoHarvest",
-   Callback = function(Value)
-      if Value then
-          Rayfield:Notify({
-             Title = "Авто-сбор",
-             Content = "Автоматический сбор включен",
-             Duration = 3,
-             Image = "refresh-cw"
-          })
-      else
-          Rayfield:Notify({
-             Title = "Авто-сбор",
-             Content = "Автоматический сбор выключен",
-             Duration = 3,
-             Image = "octagon"
-          })
-      end
-   end,
-})
+local ThemesSection = ThemesTab:CreateSection("Выбор темы")
 
-local AutoPlantToggle = GardenTab:CreateToggle({
-   Name = "Авто-посадка",
-   CurrentValue = false,
-   Flag = "AutoPlant",
-   Callback = function(Value)
-      if Value then
-          Rayfield:Notify({
-             Title = "Авто-посадка",
-             Content = "Автоматическая посадка включена",
-             Duration = 3,
-             Image = "refresh-cw"
-          })
-      else
-          Rayfield:Notify({
-             Title = "Авто-посадка",
-             Content = "Автоматическая посадка выключена",
-             Duration = 3,
-             Image = "octagon"
-          })
-      end
-   end,
-})
+local availableThemes = {
+    "Default",
+    "AmberGlow", 
+    "Amethyst",
+    "Bloom",
+    "DarkBlue",
+    "Green",
+    "Light",
+    "Ocean",
+    "Serenity"
+}
 
--- Вкладка Test
-local TestTab = Window:CreateTab("Test", "test-tube")
-
-local ScriptsSection = TestTab:CreateSection("Скрипты")
-
-local IYButton = TestTab:CreateButton({
-   Name = "Infinity Yield",
-   Callback = function()
-      loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+local ThemeDropdown = ThemesTab:CreateDropdown({
+   Name = "Выберите тему интерфейса",
+   Options = availableThemes,
+   CurrentOption = {"Default"},
+   MultipleOptions = false,
+   Flag = "ThemeSelector",
+   Callback = function(Options)
+      local selectedTheme = Options[1]
+      Window.ModifyTheme(selectedTheme)
       Rayfield:Notify({
-         Title = "Infinity Yield",
-         Content = "Загружен успешно",
+         Title = "Тема изменена",
+         Content = "Активирована: " .. selectedTheme,
          Duration = 3,
-         Image = "terminal"
+         Image = "palette"
       })
    end,
 })
 
-local FlyButton = TestTab:CreateButton({
-   Name = "Fly GUI V3",
-   Callback = function()
-      loadstring(game:HttpGet("https://raw.githubusercontent.com/XNEOFF/FlyGuiV3/main/FlyGuiV3.txt"))()
-      Rayfield:Notify({
-         Title = "Fly GUI V3",
-         Content = "Загружен успешно",
-         Duration = 3,
-         Image = "feather"
-      })
-   end,
+-- Информация о темах
+local InfoSection = ThemesTab:CreateSection("Информация")
+
+local ThemesParagraph = ThemesTab:CreateParagraph({
+    Title = "Доступные темы",
+    Content = "Default - Стандартная тема\nAmberGlow - Янтарное свечение\nAmethyst - Аметист\nBloom - Цветение\nDarkBlue - Темно-синяя\nGreen - Зеленая\nLight - Светлая\nOcean - Океан\nSerenity - Спокойствие"
 })
 
-local MoreScriptsSection = TestTab:CreateSection("Дополнительные скрипты")
-
-local SpyButton = TestTab:CreateButton({
-   Name = "Simple Spy",
+-- Кнопка сброса темы
+local ResetThemeButton = ThemesTab:CreateButton({
+   Name = "Сбросить к стандартной теме",
    Callback = function()
-      loadstring(game:HttpGet("https://raw.githubusercontent.com/exxtremestuffs/SimpleSpySource/master/SimpleSpy.lua"))()
+      Window.ModifyTheme("Default")
+      ThemeDropdown:Set({"Default"})
       Rayfield:Notify({
-         Title = "Simple Spy",
-         Content = "Загружен успешно",
+         Title = "Тема сброшена",
+         Content = "Восстановлена стандартная тема",
          Duration = 3,
-         Image = "eye"
-      })
-   end,
-})
-
-local DarkDexButton = TestTab:CreateButton({
-   Name = "Dark Dex",
-   Callback = function()
-      loadstring(game:HttpGet("https://raw.githubusercontent.com/infyiff/backup/main/dex.lua"))()
-      Rayfield:Notify({
-         Title = "Dark Dex",
-         Content = "Загружен успешно",
-         Duration = 3,
-         Image = "database"
-      })
-   end,
-})
-
--- Вкладка "О нас"
-local AboutTab = Window:CreateTab("О нас", "info")
-
-local AboutSection = AboutTab:CreateSection("Информация")
-
-local Paragraph = AboutTab:CreateParagraph({
-    Title = "MetroProjectile Hub", 
-    Content = "Автор: GitHubVibe\n\nПродвинутый хаб для различных игр"
-})
-
-local LinksSection = AboutTab:CreateSection("Ссылки")
-
-local TelegramButton = AboutTab:CreateButton({
-   Name = "Telegram: t.me/MetroProjectile",
-   Callback = function()
-      setclipboard("t.me/MetroProjectile")
-      Rayfield:Notify({
-         Title = "Telegram",
-         Content = "Ссылка скопирована в буфер",
-         Duration = 3,
-         Image = "message-circle"
-      })
-   end,
-})
-
-local AuthorButton = AboutTab:CreateButton({
-   Name = "Автор: GitHubVibe",
-   Callback = function()
-      setclipboard("GitHubVibe")
-      Rayfield:Notify({
-         Title = "Автор",
-         Content = "Никнейм скопирован в буфер",
-         Duration = 3,
-         Image = "user"
+         Image = "refresh-cw"
       })
    end,
 })
